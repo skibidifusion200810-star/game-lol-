@@ -1,63 +1,71 @@
 # SHADOW MARKET
 
-A responsive multiplayer trading game built from the concept and incomplete code supplied by Claude. The missing UI, backend endpoints, data persistence, secure login, and live exchange have been finished.
+A dark trading empire browser game. **Now playable on GitHub Pages without any backend.**
 
-## What works
+## Play online
 
-- Create account (username and password, no email) with $1,000 starting balance
-- Persistent SQLite users, balances, inventories and transaction histories
-- Seven tradeable goods: graphics cards, luxury watches, rare collectibles, mysterious cargo, gold bars, smartphones, vintage art
-- Global server-simulated prices that fluctuate every 15 seconds and broadcast to everyone online
-- Atomic buy/sell transactions, dynamic prices, live historical charts, profit/loss and portfolio totals
-- Warehouse storage capacity and upgrades
-- Live player-to-player auctions with escrow, bidding and 5-minute settlement
-- Shared public chat, live market events and global net-worth leaderboard
-- A complete responsive, dark React interface
+After GitHub Pages is enabled, the game will be available here:
 
-Prices and balances are fictional in-game dollars. This is not a real-money trading service.
+**https://skibidifusion200810-star.github.io/game-lol-/**
 
-## Run locally
+The GitHub Actions workflow automatically publishes a Vite build whenever the main branch changes.
 
-Requires Node.js 20 or newer.
+If the site gives 404, go to **Repository → Settings → Pages → Build and deployment → Source: GitHub Actions**. Then go to **Actions → Publish SHADOW MARKET to GitHub Pages → Run workflow**. The workflow also attempts to enable Pages automatically. Availability may depend on repository settings.
 
-1. Clone this repository.
-2. Copy .env.example to .env.
-3. Replace JWT_SECRET in .env with a long random string.
-4. Run npm install in the repository root.
-5. Run npm run dev.
-6. Open http://localhost:3000 and register.
+## Browser-only game on GitHub Pages
 
-The server runs at http://localhost:5000. The database is created in server/data/ (ignored by Git).
+No backend, API keys or paid hosting are needed for the Pages edition:
 
-Run npm run build to create the production frontend. Run npm start to start the backend; if client/dist exists the backend also serves the frontend on the same host/port. Run npm test for backend validation tests.
+- Create and log in to **browser-local accounts** with username and password (no email); each starts with $1,000 fictional dollars.
+- Seven goods with simulated prices updating every 15 seconds.
+- Buy/sell trades, inventory, wallet, portfolio value, profit/loss and warehouse upgrades.
+- Five-minute auctions between demo accounts **created on the same browser**; bidding uses escrow and automatically settles when visited.
+- Local leaderboard, local chat history and random market events.
+- Price history charts and responsive dark gaming UI.
+- Game progress, transactions and accounts saved in the browser.
 
-## Deploy online
+**IMPORTANT: This is not online multiplayer.** Accounts, auctions, inventories, chat, and rankings do not sync between real players or devices. Closing the tab preserves progress in the same browser, but clearing site data or private browsing may erase it. Browser-only accounts are not secure online identities, so do not reuse real passwords. No real money is involved.
 
-Deploy as a single Node.js service:
-- Build: npm install && npm run build
-- Start: npm start
-- Set NODE_ENV=production and JWT_SECRET to a secret string of at least 32 characters.
-- Put DATABASE_PATH on a persistent disk so players do not lose their accounts after redeployments.
-- Serve over HTTPS; WebSockets automatically use WSS on HTTPS pages.
-- Optionally set CLIENT_ORIGIN to the exact allowed origin when hosting the frontend separately.
+## Local preview of the GitHub Pages edition
 
-**GitHub Pages only hosts static content.** It cannot host the multiplayer backend, WebSockets, or database. If you use GitHub Pages, host the Node.js API separately, build the client with VITE_API_URL pointing to your backend URL and VITE_BASE_PATH set to /game-lol-/, then publish the client/dist folder. Without a public backend, registration and multiplayer will not function.
+Requires Node.js 20+.
 
-This starter runs as a single Node process with SQLite. For massive multiplayer scale, move storage to PostgreSQL and broadcast events using a shared message broker.
+1. Run npm install.
+2. Set VITE_OFFLINE_MODE=true and VITE_BASE_PATH=/game-lol-/ in your environment.
+3. Run npm run build.
+4. Run npm run preview -w client.
+5. Open the local URL shown in the terminal (include /game-lol-/).
 
-## API
+On Windows PowerShell:
 
-POST /api/auth/register and /api/auth/login
-GET /api/auth/me
-GET /api/market/prices and /api/market/history/:id
-POST /api/market/trade with itemId, side and quantity
-GET /api/player/overview
-POST /api/player/upgrade
-GET /api/leaderboard, /api/events, /api/auctions, /api/chat
-POST /api/auctions with itemId, quantity, startingBid
-POST /api/auctions/:id/bid with amount
-WebSocket /ws — send type auth with token, then type chat with message
+    npm install
+    $env:VITE_OFFLINE_MODE='true'
+    $env:VITE_BASE_PATH='/game-lol-/'
+    npm run build
+    npm run preview -w client
 
-## Next steps
+Browser game integration tests:
 
-Advanced ideas such as alliances, risk-based shipments and prestige resets are not implemented yet. This repository focuses on a complete, usable core game first.
+    node --test client/src/offline.test.mjs
+
+## Original multiplayer server is still included
+
+The Node.js/SQLite/WebSocket multiplayer backend is still available in server/. For true global multiplayer, accounts and inventory shared across devices, you need to deploy it to a persistent Node host separately. GitHub Pages cannot run Node.js, SQLite or WebSockets.
+
+For local development using the real backend:
+
+1. Copy .env.example to .env and set JWT_SECRET.
+2. Run npm install, then npm run dev.
+3. Visit http://localhost:3000.
+
+For a Pages frontend connecting to a deployed backend, build with these environment variables:
+
+- VITE_OFFLINE_MODE=false
+- VITE_API_URL=https://your-secure-backend-domain
+- VITE_BASE_PATH=/game-lol-/
+
+Configure CLIENT_ORIGIN on the backend, use HTTPS/WSS and persist the database. Never expose backend secrets as VITE_ environment variables.
+
+The **automatic Pages workflow uses VITE_OFFLINE_MODE=true** so the site works without any backend.
+
+Advanced alliances and intercepted cargo shipments are future features, not yet built.
