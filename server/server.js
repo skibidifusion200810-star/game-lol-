@@ -105,7 +105,7 @@ app.post('/api/player/upgrade',authorize,(req,res)=>{
 });
 app.get('/api/leaderboard',(_req,res)=>res.json(db.prepare('SELECT p.username,p.balance,p.balance+COALESCE(SUM(i.quantity*m.price),0) AS net_worth,(SELECT COUNT(*) FROM transactions t WHERE t.player_id=p.id) AS trades FROM players p LEFT JOIN inventory i ON i.player_id=p.id LEFT JOIN market_prices m ON m.item_id=i.item_id GROUP BY p.id ORDER BY net_worth DESC LIMIT 50').all()));
 app.get('/api/events',(_req,res)=>res.json(db.prepare('SELECT * FROM events ORDER BY id DESC LIMIT 12').all()));
-const getAuctions=()=>db.prepare('SELECT a.*,m.item_name,m.symbol,s.username AS seller,b.username AS bidder FROM auctions a JOIN market_prices m ON m.item_id=a.item_id JOIN players s ON s.id=a.seller_id LEFT JOIN players b ON b.id=a.bidder_id WHERE a.status="active" ORDER BY a.ends_at ASC LIMIT 50').all();
+const getAuctions=()=>db.prepare('SELECT a.*,m.item_name,m.symbol,s.username AS seller,b.username AS bidder FROM auctions a JOIN market_prices m ON m.item_id=a.item_id JOIN players s ON s.id=a.seller_id LEFT JOIN players b ON b.id=a.bidder_id WHERE a.status=? ORDER BY a.ends_at ASC LIMIT 50').all('active');
 app.get('/api/auctions',(_req,res)=>res.json(getAuctions()));
 app.post('/api/auctions',authorize,(req,res)=>{
  const {itemId,quantity,startingBid}=req.body;
@@ -120,7 +120,7 @@ app.post('/api/auctions/:id/bid',authorize,(req,res)=>{
  const amount=req.body.amount;
  if(!Number.isFinite(amount)||amount<1||amount>1000000) return bad(res,'Invalid bid.');
  try { db.transaction(()=>{
-  const auction=db.prepare('SELECT * FROM auctions WHERE id=? AND status="active"').get(req.params.id);
+  const auction=db.prepare('SELECT * FROM auctions WHERE id=? AND status=?').get(req.params.id,'active');
   if(!auction||auction.ends_at<=Date.now()) throw Error('Auction expired.');
   if(auction.seller_id===req.player.id) throw Error('Cannot bid on your own auction.');
   if(auction.bidder_id===req.player.id) throw Error('Already the highest bidder.');
@@ -133,12 +133,12 @@ app.post('/api/auctions/:id/bid',authorize,(req,res)=>{
  })(); send('auction_update'); res.json({ok:true}); } catch(e){bad(res,e.message);}
 });
 const settle=()=>{
- const expired=db.prepare('SELECT * FROM auctions WHERE status="active" AND ends_at<=?').all(Date.now());
+ const expired=db.prepare('SELECT * FROM auctions WHERE status=? AND ends_at<=?').all('active',Date.now());
  if(!expired.length) return;
  db.transaction(()=>{ for(const a of expired){
   if(a.bidder_id){ db.prepare('UPDATE players SET balance=balance+? WHERE id=?').run(a.bid,a.seller_id); addItem(a.bidder_id,a.item_id,a.quantity,Math.round(a.bid/a.quantity)); }
   else addItem(a.seller_id,a.item_id,a.quantity,item(a.item_id).price);
-  db.prepare('UPDATE auctions SET status="closed" WHERE id=?').run(a.id);
+  db.prepare('UPDATE auctions SET status=? WHERE id=?').run('closed',a.id);
  } })();
  send('auction_update');
 };
@@ -175,7 +175,7 @@ function eventTick(){
  const record=item(ITEMS[Math.floor(Math.random()*ITEMS.length)][0]),rise=Math.random()>=0.5;
  const msg=(rise?'Demand spike: ':'Market drop: ')+record.item_name+(rise?' is surging!':' is falling!');
  db.transaction(()=>{
-  pushPrice(record.item_id,Math.round(record.price*(rise?1.15:0.86)));
+  pushPrice(record.item_id,Math.max(Math.round(record.base_price*0.4),Math.min(Math.round(record.base_price*3),Math.round(record.price*(rise?1.15:0.86)))));
   db.prepare('INSERT INTO events(description) VALUES(?)').run(msg);
  })();
  send('event',{description:msg});send('market_update',{prices:allPrices()});
