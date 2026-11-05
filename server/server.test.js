@@ -40,7 +40,7 @@ test('registration, buying, selling, auctions and leaderboard', async () => {
   const b=await request('/auth/register',{username:'TraderTwo',password:'password321'});
   assert.equal(b.status,201);
   const bid=await request('/auctions/'+auction.data.id+'/bid',{amount:200},b.data.token);
-  assert.equal(bid.status,200);
+  assert.equal(bid.status,200,JSON.stringify(bid));
   const ranking=await request('/leaderboard');
   assert.equal(ranking.status,200);
   assert.equal(ranking.data.length,2);
