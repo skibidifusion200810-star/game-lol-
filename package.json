@@ -1,0 +1,1 @@
+{"name":"shadow-market","private":true,"workspaces":["server","client"],"scripts":{"dev":"concurrently -k \"npm run dev -w server\" \"npm run dev -w client\"","build":"npm run build -w client","start":"npm run start -w server","test":"npm run test -w server"},"devDependencies":{"concurrently":"^9.1.2"},"engines":{"node":">=20"}}
