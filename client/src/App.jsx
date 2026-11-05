@@ -60,7 +60,8 @@ function App() {
  const [tab,setTab]=useState('dashboard'),[prices,setPrices]=useState([]),[overview,setOverview]=useState(null),[leaders,setLeaders]=useState([]),[auctions,setAuctions]=useState([]),[events,setEvents]=useState([]),[messages,setMessages]=useState([]);
  const [selected,setSelected]=useState('graphics-card'),[history,setHistory]=useState([]),[side,setSide]=useState('buy'),[quantity,setQuantity]=useState(1),[busy,setBusy]=useState(false);
  const [notice,setNotice]=useState(null),[online,setOnline]=useState(false),[chatInput,setChatInput]=useState(''),[auctionItem,setAuctionItem]=useState(''),[auctionQty,setAuctionQty]=useState(1),[startBid,setStartBid]=useState('100'),[bidAmounts,setBidAmounts]=useState({});
- const ws=useRef(null),toastTimer=useRef(null),chatEnd=useRef(null);
+ const ws=useRef(null),toastTimer=useRef(null),chatEnd=useRef(null),selectedRef=useRef(selected);
+ useEffect(()=>{selectedRef.current=selected;},[selected]);
  const toast=(msg,type='success')=>{setNotice({msg,type});clearTimeout(toastTimer.current);toastTimer.current=setTimeout(()=>setNotice(null),4200);};
  const logout=()=>{localStorage.removeItem('shadow_token');setToken('');setUser(null);setOverview(null);ws.current?.close();};
  const loadOverview=useCallback(async()=>{
@@ -82,7 +83,7 @@ function App() {
    socket.onopen=()=>{setOnline(true);socket.send(JSON.stringify({type:'auth',token}));};
    socket.onmessage=e=>{try{
     const data=JSON.parse(e.data);
-    if(data.type==='market_update')setPrices(data.prices);
+    if(data.type==='market_update'){setPrices(data.prices);api('/market/history/'+selectedRef.current).then(setHistory).catch(()=>{});}
     if(data.type==='auction_update'){api('/auctions').then(setAuctions).catch(()=>{});loadOverview();}
     if(data.type==='event'){toast(data.description);api('/events').then(setEvents).catch(()=>{});}
     if(data.type==='chat')setMessages(prev=>[...prev.slice(-39),data]);
