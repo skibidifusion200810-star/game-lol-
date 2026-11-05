@@ -1,8 +1,10 @@
 import Database from 'better-sqlite3';
+import { config as loadEnv } from 'dotenv';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+loadEnv({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 const path = process.env.DATABASE_PATH ? resolve(process.env.DATABASE_PATH) : fileURLToPath(new URL('./data/shadow_market.db', import.meta.url));
 mkdirSync(dirname(path), { recursive: true });
 const db = new Database(path);
