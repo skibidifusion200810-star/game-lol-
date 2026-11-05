@@ -1,0 +1,48 @@
+name: Publish SHADOW MARKET to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: shadow-market-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test browser-only game
+        run: node --test client/src/offline.test.mjs
+      - name: Build standalone GitHub Pages game
+        run: npm run build
+        env:
+          VITE_OFFLINE_MODE: 'true'
+          VITE_BASE_PATH: /game-lol-/
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload static game
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/dist
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
