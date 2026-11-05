@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import { offlineApi, offlineTick, BROWSER_SAVE_KEY } from './offline.js';
-globalThis.crypto=globalThis.crypto||webcrypto;
+if (!globalThis.crypto) Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
 const storage=new Map();
 globalThis.localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,String(value)),removeItem:key=>storage.delete(key)};
 const post=(path,body,token='')=>offlineApi(path,{method:'POST',body:JSON.stringify(body)},token);
