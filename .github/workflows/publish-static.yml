@@ -1,0 +1,55 @@
+name: Build playable site for branch-based GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'package.json'
+      - 'server/package.json'
+      - '.github/workflows/publish-static.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-static-game
+  cancel-in-progress: true
+
+jobs:
+  build-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test browser game
+        run: node --test client/src/offline.test.mjs
+      - name: Build GitHub Pages application
+        run: npm run build
+        env:
+          VITE_OFFLINE_MODE: 'true'
+          VITE_BASE_PATH: /game-lol-/
+      - name: Copy compiled site into repository root
+        run: |
+          test -f client/dist/index.html
+          test -d client/dist/assets
+          rm -rf assets
+          cp -R client/dist/assets ./assets
+          cp client/dist/index.html ./index.html
+          touch .nojekyll
+      - name: Commit static files for existing Pages branch settings
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f index.html .nojekyll assets
+          if git diff --cached --quiet; then
+            echo 'Site files already up to date.'
+          else
+            git commit -m 'Publish playable browser game to GitHub Pages root'
+            git push
+          fi
